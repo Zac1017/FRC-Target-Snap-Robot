@@ -4,16 +4,360 @@
 
 package frc.robot;
 
-/**
- * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
- * constants. This class should not be used for any other purpose. All constants should be declared
- * globally (i.e. public static). Do not put anything functional in this class.
- *
- * <p>It is advised to statically import this class (or one of its inner classes) wherever the
- * constants are needed, to reduce verbosity.
- */
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.Constants.Chassis.TurretConfiguration;
+import frc.robot.util.math.Conversions;
+
 public final class Constants {
-  public static class OperatorConstants {
-    public static final int kDriverControllerPort = 0;
-  }
+	public static final String kRio = "rio";
+	public static final String kCanivore = "509CANIvore";
+  public static final double kPipeFromAprilTagCenter = 0.84836; // meters
+
+	public static class Operator {
+		public static final double kStickDeadband = 0.1;
+        public static final double kPrecisionMovementMultiplier = 0.3;
+		public static final double kPrecisionRotationMultiplier = 0.2;
+		public static final double kTriggerDeadband = 0.15;
+	}
+
+	public static class Chassis {
+		// TODO: Change all
+		public static final double kRobotWeight = 61.7d;
+		public static final double kMOI = 5.2013;
+		public static final double kOffsetToSwerveModule = 0.395;
+		public static final double kKrakenFreeSpeedRPM = 6000.0d;
+		public static final double kKrakenFreeSpeedRPS = kKrakenFreeSpeedRPM / 60.0d;
+		public static final double kMaxSpeed = Conversions.falconToMPS(kKrakenFreeSpeedRPS, M5n.kWheelCircumference,
+			M5n.kDriveGearRatio); // test
+		
+		public static class M5n { // R2 config
+			public static final double kWheelRadius = Units.inchesToMeters(2.0);
+			public static final double kWheelCircumference = 2 * kWheelRadius * Math.PI; // 0.3192 meters
+			public static final double kDriveGearRatio = 6.03 / 1;
+			public static final double kAngleGearRatio = 287.0d / 11.0d;
+			public static final double kCouplingRatio = 25.0d / 7.0d;
+			public static final double wheelCOF = 1.0; // default placeholder value
+		}
+
+		public static final double kMaxAngularVelocity = kMaxSpeed
+			/ (Math.hypot(Chassis.kOffsetToSwerveModule, Chassis.kOffsetToSwerveModule));
+		// public static final double kMaxAngularAcceleration = 0.0;
+
+		public static final DCMotor kKrakenDcMotorProfile = new DCMotor(
+			12,
+			7.09, 
+			366,
+			2,
+			kKrakenFreeSpeedRPS * 2 * Math.PI,
+			1);
+
+		public static record SwerveModuleConfiguration(
+			int moduleNumber,
+			int steerEncoderId,
+			int steerMotorId,
+			int driveMotorId,
+			double steerEncoderOffset) {}
+
+		public static final SwerveModuleConfiguration kFrontRight = new SwerveModuleConfiguration(
+			0,
+			IDs.kFrontRightEncoder,
+			IDs.kFrontRightSteer,
+			IDs.kFrontRightDrive,
+			98.70156);
+
+		public static final SwerveModuleConfiguration kFrontLeft = new SwerveModuleConfiguration(
+			1,
+			IDs.kFrontLeftEncoder,
+			IDs.kFrontLeftSteer,
+			IDs.kFrontLeftDrive,
+			153.45344);
+
+		public static final SwerveModuleConfiguration kBackLeft = new SwerveModuleConfiguration(
+			2,
+			IDs.kBackLeftEncoder,
+			IDs.kBackLeftSteer,
+			IDs.kBackLeftDrive,
+			-17.05068);
+
+		public static final SwerveModuleConfiguration kBackRight = new SwerveModuleConfiguration(
+			3,
+			IDs.kBackRightEncoder,
+			IDs.kBackRightSteer,
+			IDs.kBackRightDrive,
+			-9.57996);
+
+		public static record TurretConfiguration(
+			String side,
+			int rotationMotorId,
+            int topFlywheelMotorId,
+            int bottomFlywheelMotorId,
+            Translation3d offsetTranslation,
+            double maxRotationClockwise,
+            double maxRotationCounterclockwise,
+			boolean zeroesCounterClockwise) {}
+
+		public static final double kRobotWidth = Units.inchesToMeters(26);
+		public static final double kBumperWidth = Units.inchesToMeters(3.5);
+        public static final double kSafePathingTolerance = 0; // TODO: set me pretty please
+        public static final double kValidPositionTolerance = 0;
+        public static final double kValidHeadingTolerance = 0;
+
+		public static final double kMaxAcceleration = 0;
+        public static final double kMaxDecceleration = 0;
+	}
+
+	public static class Turret {
+
+		public static final TurretConfiguration kLeftTurretConfiguration = new TurretConfiguration(
+			"Left",
+			Constants.IDs.kLeftRotationMotor, 
+			Constants.IDs.kLeftTopFlywheel, 
+			Constants.IDs.kLeftBottomFlywheel,
+			new Translation3d(0.14,0.14,0.48),
+			-100.283203,
+			204,
+			false);
+
+		public static final TurretConfiguration kRightTurretConfiguration = new TurretConfiguration(
+			"Right",
+			Constants.IDs.kRightRotationMotor, 
+			Constants.IDs.kRightTopFlywheel,
+			Constants.IDs.kRightBottomFlywheel,
+			new Translation3d(0.14,-0.14,0.48),
+			-101.25,
+			204,
+			false);
+
+		// TODO: find me
+		public static final double kRotationMotorToMechanismRatio = 148/12d / 1.23991;
+		public static final double kFlywheelMotorToMechanismRatio = 24.0 / 18.0;
+		public static final double kFlywheelMechanismMaxRps = 100.0d / kFlywheelMotorToMechanismRatio * 0.1;
+
+		public static final double kRotationTolerance = 4; // degrees
+		public static final double kFlywheelSpeedTolerance = 25.0 / 60.0; // rotations per second (25 rpm)
+        public static final double kIndexerFeedFlywheelToleranceRps = 20.0;
+
+        public static final double kTurretHeightFromGround = .48;
+        public static final double kTurretAngleDegrees = 17;
+
+		public static final double kFlywheelRadiusMeters = Units.inchesToMeters(3/2);
+        public static final double kAverageFuelMass = 0.216;
+        public static final double kIdleFlywheelVoltage = 1.75;
+
+		public static final double kEfficiency = 1.05;
+		public static final double kMagnusCoefficient = 0.02; // tune 0.02~0.05
+		public static final double kFlywheelSpeedScale = 1;
+
+		public static final double kPrefireLeadTimeSeconds = 2.0;
+        public static final double kMovementCorrectionConstant = Constants.tunableNumber(
+            "Turret/MovementCorrectionConstant",
+            0.02);
+        public static final int kTimeOfFlightIterations = 3;
+		public static final double kMovingLeadScale = 0.6;
+
+		public static final double kAutoTargetZoneHysteresisMeters = 0.35;
+
+        public static final double kSWIMMaxAngularVelocity = 1.5 * Math.PI; // rad/s
+
+		public static class SWIM {
+			public static final String kLeadScaleNearKey = "LeadScaleNear";
+			public static final String kLeadScaleMidLowLatKey = "LeadScaleMidLowLat";
+			public static final String kLeadScaleMidHighLatKey = "LeadScaleMidHighLat";
+			public static final String kLeadScaleFarLowLatKey = "LeadScaleFarLowLat";
+			public static final String kLeadScaleFarHighLatKey = "LeadScaleFarHighLat";
+
+			public static final double kEfficiencyDefault = 1.2; // overall shot scale
+			public static final double kEfficiencyFar = 1.0775; // overall shot scale
+			public static final double kOvershootMinMeters = 0.0;
+			public static final double kOvershootMaxMeters = 0.5;
+
+			public static final double kLeftInsideAimOffsetMeters = -0.16;
+			public static final double kRightInsideAimOffsetMeters = -0.16;
+			public static final double kInsideAimStartDistanceMeters = 3.3; // Minimum range before inside aim correction begins.
+			public static final double kInsideAimDistanceScale = 0.3; // Scalar for how strongly inside aim offset falls with distance.
+			
+			public static final double kLeadScaleNearDefault = 0.8; // Lead multiplier for near shots.
+			public static final double kLeadScaleMidLowLatDefault = 0.8; // Lead multiplier for mid-range, lower lateral speed shots.
+			public static final double kLeadScaleMidHighLatDefault = 2.0; // Lead multiplier for mid-range, higher lateral speed shots.
+			public static final double kLeadScaleFarLowLatDefault = 1.0; // Lead multiplier for far-range, lower lateral speed shots.
+			public static final double kLeadScaleFarHighLatDefault = 5.5; // Lead multiplier for far-range, higher lateral speed shots.
+
+			public static final double kLeadNearRangeMeters = 2.6; // Range where lead starts blending away from near-shot tuning.
+			public static final double kLeadMidRangeMeters = 3.8; // Range where lead finishes blending to mid-shot tuning.
+			public static final double kLeadLowLateralSpeed = 1.5; // Sideways speed threshold for mid-range low/high lead split.
+			public static final double kLeadHighLateralSpeed = 1.5; // Sideways speed threshold for far-range low/high lead split.
+		}
+	}
+
+	public static class Hopper { // TODO: find me
+        public static final double kIntakingVelocity = 85;
+		public static final double kIndexingVelocity = 50;
+		
+		public static final double kIntakeExtension = 10.141;
+		public static final double kIntakeFullExtensionMeters = 0.29;
+        public static final double kRetractedExtensionOffset = 0.7;
+        public static final double kRetractionResistanceTorqueThreshold = 100; // TODO: temp, increase for real
+        public static final double kRetractionResistanceHoldOffset = 0.5;
+        public static final double kMinExtensionPosition = 0.3;
+        public static final double kMaxExtensionPosition = kIntakeExtension;
+	}
+
+	public static class Vortex {
+        public static final String kFrontLimelightName = "limelight-front";
+        public static final String kIntakeLimelightName = "limelight-intake";
+        public static final Vector<N3> kLimelightMeasurementStdDevs = VecBuilder.fill(.7, .7, 99999);
+        public static final Vector<N3> kIntakeLimelightMeasurementStdDevs = VecBuilder.fill(1.0, 1.0, 99999);
+		public static final Matrix<N3, N1> kJetsonBaseMeasurementStdDevs = VecBuilder.fill(.9, 0.9, 0.9); // TODO: find n3 confidence
+        public static final double kJetsonFloorErrorTrustThresholdMeters = 0.02;
+        public static final double kJetsonFloorErrorStdDevScale = 2.4;
+        public static final double kJetsonMaxStdDevMultiplier = 2.0;
+        
+		public static final double kFrontLimelightForwardMeters = 0.4;
+        public static final double kFrontLimelightSideMeters = -0.117348;
+        public static final double kFrontLimelightUpMeters = 0.26;
+        public static final double kFrontLimelightRollDegrees = 0.0;
+        public static final double kFrontLimelightPitchDegrees = -17.0;
+        public static final double kFrontLimelightYawDegrees = 0;
+
+        public static final double kIntakeLimelightForwardMeters = -0.324;
+        public static final double kIntakeLimelightSideMeters = 0.0;
+        public static final double kIntakeLimelightUpMeters = 0.341;
+        public static final double kIntakeLimelightRollDegrees = 0.0;
+        public static final double kIntakeLimelightPitchDegrees = 0.0;
+        public static final double kIntakeLimelightYawDegrees = 180.0;
+	}
+
+	public static class IDs {
+		// Swerve Drive
+		public static final int kFrontLeftDrive = 1;
+		public static final int kFrontLeftSteer = 2;
+		public static final int kFrontLeftEncoder = 9;
+
+		public static final int kFrontRightDrive = 3;
+		public static final int kFrontRightSteer = 4;
+		public static final int kFrontRightEncoder = 10;
+		
+		public static final int kBackLeftDrive = 5;
+		public static final int kBackLeftSteer = 6;
+		public static final int kBackLeftEncoder = 11;
+		
+		public static final int kBackRightDrive = 7;
+		public static final int kBackRightSteer = 8;
+		public static final int kBackRightEncoder = 12;
+
+		// Shooters
+		public static final int kLeftBottomFlywheel = 14;
+		public static final int kLeftTopFlywheel = 13;
+		public static final int kLeftRotationMotor = 15;
+		
+		public static final int kRightBottomFlywheel = 17;
+		public static final int kRightTopFlywheel = 16;
+		public static final int kRightRotationMotor = 18;
+		
+		// Hopper
+        public static final int kIntakeExtension = 20;
+        public static final int kIntakeRotation = 19;
+        public static final int kLeftKicker = 22;
+        public static final int kRightKicker = 23;
+	}
+
+	public static class PathGeneration {
+		public static final double kSafePathTolerance = 0.2; // m
+        public static final double kAdjustRate = 0.01;
+        public static final double kCurvaturePointRemovalRadius = 0; // m
+		public static final double kRetryPathingDelay = 0.2;
+        public static final int kLengthApproximationSegments = 25;
+		public static final double kStoppingDistance = 0.5; //m
+	}
+
+	public static class PIDConstants {
+		public static class Drive {
+			// TODO: Tune Me
+			public static final double kDriveVelocityP = 0.2;
+			public static final double kDriveVelocityI = 3.0;
+			public static final double kDriveVelocityD = 0.0;
+			public static final double kDriveVelocityS = 0.124;
+			public static final double kDriveVelocityV = 0.109;
+			public static final double kDriveVelocityA = 0.0;
+
+			public static final double kSteerAngleP = 100.0;
+			public static final double kSteerAngleI = 0.0;
+			public static final double kSteerAngleD = 0.0;
+
+			public static final double kHeadingPassiveP = 1.0;
+			public static final double kHeadingPassiveI = 0.15;
+			public static final double kHeadingPassiveD = 0.0;
+			public static final double kHeadingAggressiveP = 4.5;
+			public static final double kHeadingAggressiveI = 0.25;
+			public static final double kHeadingAggressiveD = 0.0;
+			public static final double kHeadingTimeout = 0.25;
+			public static final double kMinHeadingCorrectionSpeed = 0.1;
+		}
+
+		public static class Turret {
+            public static final double kRotationP = 14.2;
+            public static final double kRotationI = 0.8;
+            public static final double kRotationD = 0.524;
+
+            public static final double kFlywheelP = 2.3;
+            public static final double kFlywheelI = 0.12;
+            public static final double kFlywheelD = 0.075;
+		}
+
+		public static class Hopper {
+            public static final double kExtensionP = 0.9;
+            public static final double kExtensionI = 0.15;
+            public static final double kExtensionD = 0.03;
+
+			public static final double kIntakeP = 0.062;
+            public static final double kIntakeI = 0.1;
+            public static final double kIntakeD = 0;
+			
+			public static final double kIndexerP = 0.02;
+            public static final double kIndexerI = 0.3;
+            public static final double kIndexerD = 0;
+		}
+	}
+
+	public static class CurrentLimits {
+		public static final double kSwerveModuleSupply = 35.0d;
+		public static final double kSwerveModuleStator = 67.0d;
+
+        public static final double kTurretRotationSupply = 25;
+        public static final double kTurretRotationStator = 35;
+
+		public static final double kTurretFlywheelSupply = 40;
+        public static final double kTurretFlywheelStator = 48;
+
+		public static final double kIntakeExtensionSupply = 7;
+        public static final double kIntakeExtensionStator = 22;
+
+		public static final double kIntakeSupply = 30;
+        public static final double kIntakeStator = 90;
+
+        public static final double kIndexerSupply = 60;
+        public static final double kIndexerStator = 120;
+	}
+
+	public static class Field {
+		public static final double kFullFieldLength = 16.54d; // Double check
+        public static final double kFieldWidth = 8.1;
+        public static final double kAllianceZoneLength = 5.5d;
+        public static final double kNeutralZoneLength = kFullFieldLength - 2 * kAllianceZoneLength;
+		
+        public static final double kAverageFuelMass = 0.216;
+		public static final double kFuelRadiusMeters = Units.inchesToMeters(1.5);
+	}
+
+	public static double tunableNumber(String name, double defaultValue){
+		return SmartDashboard.getNumber(name, defaultValue);
+	}
 }
