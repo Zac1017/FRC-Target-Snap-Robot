@@ -20,6 +20,7 @@ public final class Constants {
 	public static final String kRio = "rio";
 	public static final String kCanivore = "509CANIvore";
   public static final double kPipeFromAprilTagCenter = 0.84836; // meters
+  public static final double kDesiredDistanceFromAprilTag = 0.05; // meters
 
 	public static class Operator {
 		public static final double kStickDeadband = 0.1;
