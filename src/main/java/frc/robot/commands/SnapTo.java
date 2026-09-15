@@ -56,6 +56,14 @@ public class SnapTo extends Command {
         );
     }
 
+    public void snapSwerve() {
+        swerve.drive(new Translation2d(0, 0), 
+        Math.toRadians(getAngleToTarget().getDegrees()), 
+        true, 
+        true
+        );
+    }
+
 
 
 }
