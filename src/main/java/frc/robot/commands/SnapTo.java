@@ -75,6 +75,11 @@ public class SnapTo extends Command {
         );
     }
 
+    @Override
+    public void execute() {
+        snapSwerve();
+    }
+
 
 
 }
