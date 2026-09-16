@@ -20,13 +20,15 @@ public class SnapTo extends Command {
 
     private final Pigeon2 kPigeon = new Pigeon2(1);
 
+    private final double kRotationP;
+
     public SnapTo(SwerveDrive swerve, Translation2d targetTranslation2d) {
         this.swerve = swerve;
         this.robotPose2d = swerve.getRawOdometeryPose();
         this.robotTranslation2d = robotPose2d.getTranslation();
         this.targetTranslation2d = targetTranslation2d;
         this.heading = () -> getHeading();
-        
+        this.kRotationP = 0.0;
 
         addRequirements(swerve);
     }
@@ -69,7 +71,7 @@ public class SnapTo extends Command {
 
     public void snapSwerve() {
         swerve.drive(new Translation2d(0, 0), 
-        Math.toRadians(getAngleToTarget().getDegrees()), 
+        Math.toRadians(getAngleToTarget().getDegrees()) * kRotationP, 
         true, 
         true
         );
