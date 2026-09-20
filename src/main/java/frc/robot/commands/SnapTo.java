@@ -12,9 +12,7 @@ import frc.robot.subsystems.drive.SwerveDrive;
 
 public class SnapTo extends Command {
     private final SwerveDrive swerve;
-    
-    private Pose2d robotPose2d;
-    private Translation2d robotTranslation2d;
+
     private Translation2d targetTranslation2d;
     private Supplier<Rotation2d> heading;
 
@@ -24,11 +22,9 @@ public class SnapTo extends Command {
 
     public SnapTo(SwerveDrive swerve, Translation2d targetTranslation2d) {
         this.swerve = swerve;
-        this.robotPose2d = swerve.getRawOdometeryPose();
-        this.robotTranslation2d = robotPose2d.getTranslation();
         this.targetTranslation2d = targetTranslation2d;
         this.heading = () -> getHeading();
-        this.kRotationP = 0.0;
+        this.kRotationP = 0.1;
 
         addRequirements(swerve);
     }
@@ -37,9 +33,12 @@ public class SnapTo extends Command {
         return kPigeon.getRotation2d();
     }
     public Translation2d getTranslationFromTarget() {
+        Translation2d robotTranslation = swerve.getRawOdometeryPose().getTranslation();
+
         return new Translation2d(
-            targetTranslation2d.getX() - robotTranslation2d.getX(),
-            targetTranslation2d.getY() - robotTranslation2d.getY());
+            targetTranslation2d.getX() - robotTranslation.getX(),
+            targetTranslation2d.getY() - robotTranslation.getY()
+        );
     }
 
     public Rotation2d getAngleToTarget() {
@@ -50,11 +49,11 @@ public class SnapTo extends Command {
             angle -= 360;
         }
 
-        while (angle < 180) {
+        while (angle < -180) {
             angle += 360;
         }
 
-        return new Rotation2d(angle);
+        return Rotation2d.fromDegrees(angle);
     }
 
     public Translation2d getRelativeTranslation() {
@@ -71,7 +70,7 @@ public class SnapTo extends Command {
 
     public void snapSwerve() {
         swerve.drive(new Translation2d(0, 0), 
-        Math.toRadians(getAngleToTarget().getDegrees()) * kRotationP, 
+        getAngleToTarget().getRadians() * kRotationP, 
         true, 
         true
         );
